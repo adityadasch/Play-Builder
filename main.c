@@ -78,6 +78,7 @@ void invoke_help(){
 int main(int argc, char *argv[]){
     #ifdef BINNED
         char* OUTDIR =  ".\\bin\\";
+    	system("IF NOT EXIST bin (mkdir bin)");
     #else
         char* OUTDIR = ".\\";
     #endif
@@ -164,8 +165,6 @@ int main(int argc, char *argv[]){
     char buffer[1000];
     sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", template,OUTDIR, objname);
     putdebug("Command: %s", buffer);
-    //system("start cmd.exe /c mkdir bin");
-    system("IF NOT EXIST bin (mkdir bin)");
     system(buffer);
 
     return 0;
