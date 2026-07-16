@@ -6,6 +6,14 @@
 #ifdef DEBUG
 #include <stdarg.h>
 #endif
+#ifdef __STDC_VERSION__
+    #if __STDC_VERSION__ < 202311L
+        #define nullptr ((void *)0)
+        #define true 1
+        #define false 0
+        typedef bool int
+    #endif
+#endif
 
 void putdebug(const char *fmt, ...) {
     #ifdef DEBUG
@@ -179,6 +187,15 @@ void blankrun(char* OUTDIR, char* filename, char* objname){
     system(buffer);
 }
 
+bool checkjson(){
+    FILE* fp = fopen("./play.json", "r");
+    if (fp != nullptr){
+        fclose(fp);
+        return true;
+    }
+    return false;
+}
+
 int main(int argc, char *argv[]){
     #ifdef BINNED
         char* OUTDIR =  ".\\bin\\";
@@ -191,7 +208,16 @@ int main(int argc, char *argv[]){
         return 1;
     }
     if (argc==1){
-        filedrun(OUTDIR);
+        if (checkjson()){
+            filedrun(OUTDIR);
+        } else {
+            FILE* fp = fopen("play.json","w");
+            if (fp != nullptr){
+                fprintf(fp, "{\n    \"entry\": \"main.c\",\n    \"depends\": [],\n    \"flags\": [],\n    \"bin\": \"output_file_name.exe\"\n}\n");
+                printf("Play.json created! Go and configure it!");
+                fclose(fp);
+            }
+        }
         return 0;
     }
 
