@@ -2,5 +2,5 @@
     "entry": "main.c",
     "depends": [],
     "flags": [],
-    "bin": "output_file_name.exe"
+    "bin": "output_file_name"
 }

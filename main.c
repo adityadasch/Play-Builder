@@ -1,19 +1,4 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "lib/cJSON.h"
-
-#ifdef DEBUG
-#include <stdarg.h>
-#endif
-#ifdef __STDC_VERSION__
-    #if __STDC_VERSION__ < 202311L
-        #define nullptr ((void *)0)
-        #define true 1
-        #define false 0
-        typedef bool int
-    #endif
-#endif
+#include "main.h"
 
 void putdebug(const char *fmt, ...) {
     #ifdef DEBUG
@@ -41,8 +26,7 @@ int parse_head_comment(char *source, char* dependency[], short depth){
         dependency[item_count++][127] = '\0'; 
         token = strtok(NULL, ";");
     }
-    return 0;
-}
+    return 0;}
 
 short count_segment(const char* source){
     // a;b -> 2 (No. of delim + 1)
@@ -50,39 +34,39 @@ short count_segment(const char* source){
     for (size_t i =0; i<strlen(source); i++){
         if (source[i] == ';') delims++;
     }
-    return delims+1;
-}
+    return delims+1;}
 
 void invoke_help(){
-	printf("Play Toolchain - Quick Compile & Run Utility\n"
-"============================================\n"
-"\n"
-"USAGE:\n"
-"    play <file.c> [<executabe_name>] -> Compiles file.c into configured folder\n"
-"                                        with name provided or the name of the source file\n"
-"    play <executable_name>           -> Searchs for executable by the name provided and runs it\n"
-"    play --help                      -> Displays this screen\n"
-"\n"
-"CODE:\n"
-"    The file passed as argument to Play should have the first line to be a \n"
-"    comment with all the linking files mentioned without any extensions seperated\n"
-"    by a semicolon(;).\n"
-"    Eg: main.c\n"
-"    // foo;bar;test\n"
-"\n"
-"DESCRIPTION:\n"
-"    The Play Toolchain provides a lightweight way to compile and run C programs.\n"
-"    It is designed for fast builds and simple execution without needing complex\n"
-"    build systems or external scripts.\n"
-"\n"
-"FEATURES:\n"
-"    - Compile source files quickly with a single command\n"
-"    - Supports organized builds into ./bin when configured\n"
-"    - Debug builds available with additional flags\n"
-"    - Global access supported by adding the executables folder to PATH\n"
-"\n"
-"\n");
-}
+    printf("Play Toolchain - Quick Compile & Run Utility\n"
+    "============================================\n"
+    "\n"
+    "USAGE:\n"
+    "    play <file.c> [<executabe_name>] -> Compiles file.c into configured folder\n"
+    "                                        with name provided or the name of the source file\n"
+    "    play <executable_name>           -> Searchs for executable by the name provided and runs it\n"
+    "    play --help                      -> Displays this screen\n"
+    "\n"
+    "CODE:\n"
+    "    The file passed as argument to Play should have the first line to be a \n"
+    "    comment with all the linking files mentioned without any extensions seperated\n"
+    "    by a semicolon(;).\n"
+    "    Eg: main.c\n"
+    "    // foo;bar;test\n"
+    "\n"
+    "DESCRIPTION:\n"
+    "    The Play Toolchain provides a lightweight way to compile and run C programs.\n"
+    "    It is designed for fast builds and simple execution without needing complex\n"
+    "    build systems or external scripts.\n"
+    "\n"
+    "FEATURES:\n"
+    "    - Compile source files quickly with a single command\n"
+    "    - Supports organized builds into ./bin when configured\n"
+    "    - Debug builds available with additional flags\n"
+    "    - Global access supported by adding the executables folder to PATH\n"
+    "\n"
+    "\n");}
+
+
 
 void filedrun(char* OUTDIR) {
     #define CLEAN do { \
@@ -132,7 +116,7 @@ void filedrun(char* OUTDIR) {
         cJSON *item = NULL;
         cJSON_ArrayForEach(item, flags) {
             if (cJSON_IsString(item) && item->valuestring) {
-                strncat(command, " -", sizeof(command)-strlen(command)-1);
+                strncat(command, " -D", sizeof(command)-strlen(command)-1);
                 strncat(command, item->valuestring, sizeof(command)-strlen(command)-1);
             } else {
                 printf("Invalid flag entry\n");
@@ -147,21 +131,24 @@ void filedrun(char* OUTDIR) {
         strncat(command, " -o ", sizeof(command)-strlen(command)-1);
         strncat(command, OUTDIR, sizeof(command)-strlen(command)-1);
         strncat(command, bin->valuestring, sizeof(command)-strlen(command)-1);
+        strncat(command, EXEEXT, 5);
         strncpy(objname, bin->valuestring, sizeof(objname)-1);
+        strncat(objname, EXEEXT, 5);
+        putdebug("exec:%s\n", objname);
+        
         objname[sizeof(objname)-1] = '\0';
     } else {
         strncpy(objname, entry->valuestring, sizeof(objname)-1);
+        strncpy(objname, EXEEXT, sizeof(objname)-1);
         objname[sizeof(objname)-1] = '\0';
-        char *dot = strchr(objname, '.');
-        if (dot) *dot = '\0';
         strncat(command, " -o ", sizeof(command)-strlen(command)-1);
         strncat(command, OUTDIR, sizeof(command)-strlen(command)-1);
         strncat(command, objname, sizeof(command)-strlen(command)-1);
     }
 
     putdebug("Command: %s\n", command);
-    char buffer[1000];
-    sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", command,OUTDIR, objname);
+    char buffer[BUFFERMAGICNUMBER];
+    sprintf(buffer, FILEDRUNCMD, command,OUTDIR, objname);
     system(buffer);
     CLEAN;
 }
@@ -181,7 +168,7 @@ void blankrun(char* OUTDIR, char* filename, char* objname){
     strcat(template, OUTDIR); 
     strcat(template, objname);
 
-    char buffer[1000];
+    char buffer[BUFFERMAGICNUMBER];
     sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", template,OUTDIR, objname);
     putdebug("Command: %s", buffer);
     system(buffer);
@@ -198,10 +185,19 @@ bool checkjson(){
 
 int main(int argc, char *argv[]){
     #ifdef BINNED
-        char* OUTDIR =  ".\\bin\\";
-    	system("IF NOT EXIST bin (mkdir bin)");
+        #if defined(_WIN32) || defined(_WIN64)
+            char* OUTDIR =  ".\\bin\\";
+    	    system("IF NOT EXIST bin (mkdir bin)");
+        #elif defined(__linux__)
+            char* OUTDIR =  "./bin/";
+    	    system("mkdir -p bin");
+        #endif
     #else
-        char* OUTDIR = ".\\";
+        #if defined(_WIN32) || defined(_WIN64)
+            char* OUTDIR = ".\\";
+        #elif defined(__linux__)
+            char* OUTDIR = "";
+        #endif
     #endif
     if (argc>3) {
         printf("Expected upto 2 but got %d instead", argc-1);
@@ -213,8 +209,8 @@ int main(int argc, char *argv[]){
         } else {
             FILE* fp = fopen("play.json","w");
             if (fp != nullptr){
-                fprintf(fp, "{\n    \"entry\": \"main.c\",\n    \"depends\": [],\n    \"flags\": [],\n    \"bin\": \"output_file_name.exe\"\n}\n");
-                printf("Play.json created! Go and configure it!");
+                fprintf(fp, "{\n    \"entry\": \"main.c\",\n    \"depends\": [],\n    \"flags\": [],\n    \"bin\": \"output_file_name\"\n}\n");
+                printf("Play.json created! Go and configure it!\n");
                 fclose(fp);
             }
         }
@@ -295,7 +291,7 @@ int main(int argc, char *argv[]){
     strcat(template, OUTDIR); 
     strcat(template, objname);
 
-    char buffer[1000];
+    char buffer[BUFFERMAGICNUMBER];
     sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", template,OUTDIR, objname);
     putdebug("Command: %s", buffer);
     system(buffer);
