@@ -1,6 +1,10 @@
 {
-    "entry": "main.c",
-    "depends": [],
-    "flags": [],
-    "bin": "output_file_name"
+    "active":"main",
+    "main":
+    {
+        "entry": "main.c",
+        "depends": [],
+        "flags": [],
+        "bin": "output_file_name"
+    }
 }

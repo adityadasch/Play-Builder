@@ -45,6 +45,7 @@ void invoke_help(){
     "                                        with name provided or the name of the source file\n"
     "    play <executable_name>           -> Searchs for executable by the name provided and runs it\n"
     "    play --help                      -> Displays this screen\n"
+    "    play -suite                      -> Changes active suite\n"
     "\n"
     "CODE:\n"
     "    The file passed as argument to Play should have the first line to be a \n"
@@ -66,7 +67,54 @@ void invoke_help(){
     "\n"
     "\n");}
 
+void read_json(FILE **fp, cJSON **json){
+    if (json==nullptr) return;
 
+    *fp = fopen("play.json", "r");
+    if (!*fp) return;
+
+    fseek(*fp, 0, SEEK_END);
+    long length = ftell(*fp);
+    fseek(*fp, 0, SEEK_SET);
+
+    char *data = malloc(length + 1);
+    if (!data) { fclose(*fp); return; }
+    fread(data, 1, length, *fp);
+    data[length] = '\0';
+
+    *json = cJSON_Parse(data);
+    free(data);
+}
+
+void change_active(char* filename){
+    #define CLEAN do { \
+        cJSON_Delete(json); \
+        fclose(fp); \
+        return; \
+    } while(0)
+
+    FILE *fp; cJSON *json;
+    read_json(&fp, &json);
+    if (!json) CLEAN;
+
+    cJSON *active = cJSON_GetObjectItemCaseSensitive(json, "active");
+    if (!active || !cJSON_IsString(active) || !active->valuestring) CLEAN;
+    free(active->valuestring);
+    active->valuestring = filename;
+    char *json_string = cJSON_Print(json);
+    if (json_string == NULL) {
+        cJSON_Delete(json);
+        return;
+    }
+    FILE *file = fopen("play.json", "w");
+    if (file != NULL) {
+        fputs(json_string, file);
+        fclose(file);
+        printf("Active has been changed");
+    } else {
+        printf("Failed to open file.\n");
+    }
+}
 
 void filedrun(char* OUTDIR) {
     #define CLEAN do { \
@@ -75,29 +123,23 @@ void filedrun(char* OUTDIR) {
         return; \
     } while(0)
 
-    FILE *fp = fopen("play.json", "r");
-    if (!fp) return;
-
-    fseek(fp, 0, SEEK_END);
-    long length = ftell(fp);
-    fseek(fp, 0, SEEK_SET);
-
-    char *data = malloc(length + 1);
-    if (!data) { fclose(fp); return; }
-    fread(data, 1, length, fp);
-    data[length] = '\0';
-
-    cJSON *json = cJSON_Parse(data);
-    free(data);
+    FILE *fp; cJSON *json;
+    read_json(&fp, &json);
     if (!json) CLEAN;
 
-    cJSON *entry = cJSON_GetObjectItemCaseSensitive(json, "entry");
+    cJSON *active = cJSON_GetObjectItemCaseSensitive(json, "active");
+    if (!active || !cJSON_IsString(active) || !active->valuestring) CLEAN;
+
+    cJSON *json_subset = cJSON_GetObjectItemCaseSensitive(json, active->valuestring);
+    if (!json_subset || !cJSON_IsObject(json_subset)) CLEAN;
+
+    cJSON *entry = cJSON_GetObjectItemCaseSensitive(json_subset, "entry");
     if (!entry || !cJSON_IsString(entry) || !entry->valuestring) CLEAN;
 
     char command[1024] = "gcc ";
     strncat(command, entry->valuestring, sizeof(command)-strlen(command)-1);
 
-    cJSON *depends = cJSON_GetObjectItemCaseSensitive(json, "depends");
+    cJSON *depends = cJSON_GetObjectItemCaseSensitive(json_subset, "depends");
     if (depends && cJSON_IsArray(depends)) {
         cJSON *item = NULL;
         cJSON_ArrayForEach(item, depends) {
@@ -111,7 +153,7 @@ void filedrun(char* OUTDIR) {
         }
     }
 
-    cJSON *flags = cJSON_GetObjectItemCaseSensitive(json, "flags");
+    cJSON *flags = cJSON_GetObjectItemCaseSensitive(json_subset, "flags");
     if (flags && cJSON_IsArray(flags)) {
         cJSON *item = NULL;
         cJSON_ArrayForEach(item, flags) {
@@ -126,7 +168,7 @@ void filedrun(char* OUTDIR) {
     }
 
     char objname[256];
-    cJSON *bin = cJSON_GetObjectItemCaseSensitive(json, "bin");
+    cJSON *bin = cJSON_GetObjectItemCaseSensitive(json_subset, "bin");
     if (bin && cJSON_IsString(bin) && bin->valuestring) {
         strncat(command, " -o ", sizeof(command)-strlen(command)-1);
         strncat(command, OUTDIR, sizeof(command)-strlen(command)-1);
@@ -155,7 +197,7 @@ void filedrun(char* OUTDIR) {
 
 void binrun(char* OUTDIR, char* filename){
     char buf[100];
-    sprintf(buf, "start cmd.exe /k \"(call %s\\%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)\"", OUTDIR, filename);
+    sprintf(buf, BINRUNCMD, OUTDIR, filename);
     putdebug("Command: %s", buf);
     system(buf);
 }
@@ -167,9 +209,13 @@ void blankrun(char* OUTDIR, char* filename, char* objname){
     strcat(template, " -o ");
     strcat(template, OUTDIR); 
     strcat(template, objname);
+    strcat(template, EXEEXT);
+
+    char objbuf[100];
+    sprintf(objbuf, "%s%s", objname, EXEEXT);
 
     char buffer[BUFFERMAGICNUMBER];
-    sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", template,OUTDIR, objname);
+    sprintf(buffer, FILEDRUNCMD, template,OUTDIR, objbuf);
     putdebug("Command: %s", buffer);
     system(buffer);
 }
@@ -196,7 +242,7 @@ int main(int argc, char *argv[]){
         #if defined(_WIN32) || defined(_WIN64)
             char* OUTDIR = ".\\";
         #elif defined(__linux__)
-            char* OUTDIR = "";
+            char* OUTDIR = "./";
         #endif
     #endif
     if (argc>3) {
@@ -209,7 +255,7 @@ int main(int argc, char *argv[]){
         } else {
             FILE* fp = fopen("play.json","w");
             if (fp != nullptr){
-                fprintf(fp, "{\n    \"entry\": \"main.c\",\n    \"depends\": [],\n    \"flags\": [],\n    \"bin\": \"output_file_name\"\n}\n");
+                fprintf(fp, "{\n    \"active\":\"main\",\n    \"main\":\n    {\n        \"entry\": \"main.c\",\n        \"depends\": [],\n        \"flags\": [],\n        \"bin\": \"output_file_name\"\n    }\n}");
                 printf("Play.json created! Go and configure it!\n");
                 fclose(fp);
             }
@@ -222,6 +268,10 @@ int main(int argc, char *argv[]){
     if (strcmp(filename, "--help")==0){
     	invoke_help();
 	return 0;
+    }
+    if (filename[0] == '-'){
+    	change_active(++filename);
+	    return 0;
     }
     if (strchr(filename, '.') == NULL){
         // Run filename
@@ -290,9 +340,13 @@ int main(int argc, char *argv[]){
     strcat(template, " -o ");
     strcat(template, OUTDIR); 
     strcat(template, objname);
+    strcat(template, EXEEXT);
+
+    char objbuf[300];
+    sprintf(objbuf, "%s%s", objname, EXEEXT);    
 
     char buffer[BUFFERMAGICNUMBER];
-    sprintf(buffer, "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)", template,OUTDIR, objname);
+    sprintf(buffer, FILEDRUNCMD, template,OUTDIR, objbuf);
     putdebug("Command: %s", buffer);
     system(buffer);
 
