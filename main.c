@@ -158,7 +158,7 @@ void filedrun(char* OUTDIR) {
         cJSON *item = NULL;
         cJSON_ArrayForEach(item, flags) {
             if (cJSON_IsString(item) && item->valuestring) {
-                strncat(command, " -D", sizeof(command)-strlen(command)-1);
+                strncat(command, " -", sizeof(command)-strlen(command)-1);
                 strncat(command, item->valuestring, sizeof(command)-strlen(command)-1);
             } else {
                 printf("Invalid flag entry\n");

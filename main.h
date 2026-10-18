@@ -14,7 +14,7 @@
         #define nullptr ((void *)0)
         #define true 1
         #define false 0
-        typedef bool int
+	typedef int bool;
     #endif
 #endif
 
