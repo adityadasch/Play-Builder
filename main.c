@@ -313,7 +313,6 @@ int main(int argc, char *argv[]){
     char* source = text;
 
     if (*source!='/') {
-        printf("Do this");
         blankrun(OUTDIR, filename, objname);
         fclose(file);
         return 0;

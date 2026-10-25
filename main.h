@@ -25,12 +25,12 @@
 #if defined(_WIN32) || defined(_WIN64)
     #define EXEEXT ".exe"
 
-    #define FILEDRUNCMD "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)"
-    #define BINRUNCMD "start cmd.exe /k \"(call %s\\%s&echo(&&echo Press any key to exit...&&pause >nul&&exit)\""
+    #define FILEDRUNCMD "start cmd.exe /k \"%s&&(call %s%s&echo(&&echo $?&&echo Press any key to exit...&&pause >nul&&exit)"
+    #define BINRUNCMD "start cmd.exe /k \"(call %s\\%s&echo(&&echo $?&&echo Press any key to exit...&&pause >nul&&exit)\""
     
 #elif defined(__linux__)
     #define EXEEXT ".out"
 
-    #define FILEDRUNCMD "bash -c '%s && \"./%s%s\"; echo; read -n 1 -s -r -p \"Press any key to continue...\"; echo'"
-    #define BINRUNCMD "bash -c '%s\\%s"EXEEXT"; echo; read -n 1 -s -r -p \"Press any key to continue...\"; echo'"
+    #define FILEDRUNCMD "bash -c '%s && \"./%s%s\";err=$?; echo; echo \"Exit code: $err\"; read -n 1 -s -r -p \"Press any key to continue...\"; echo'"
+    #define BINRUNCMD "bash -c '%s\\%s"EXEEXT";err=$?; echo; echo \"Exit code: $err\"; read -n 1 -s -r -p \"Press any key to continue...\"; echo'"
 #endif
