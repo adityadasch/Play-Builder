@@ -6,6 +6,7 @@
 #include <string>
 #include <filesystem>
 #include <fstream>
+#include <iostream>
 
 int runProcess(const char* filename, const std::vector<char *> args);
 

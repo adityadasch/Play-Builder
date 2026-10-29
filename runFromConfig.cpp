@@ -1,10 +1,7 @@
 #include "lib/json.hpp"
 #include "common.hpp"
-#include <string>
-#include <vector>
-#include <iostream>
 
-using json= nlohmann::json;
+using json= nlohmann::ordered_json;
 
 // TODO:
 // Make sure file is ran only if compilation finishes properly
@@ -189,7 +186,7 @@ int convertConfig(Config* config, std::vector<char*>& args, std::vector<char *>&
     return 0;
 }
 
-int runFromConfig(void){
+int runFromConfig(std::string& bin){
     Config config;
     int err = extractConfig(&config);  
 
@@ -206,10 +203,10 @@ int runFromConfig(void){
         return 1;
     }
 
-    std::cout << "Bin at " << args.at(3) << std::endl;
+    // std::cout << "Bin at " << args.at(3) << std::endl;
 
     err = runProcess(args.at(3), runtime_args);
-
+    bin = std::string(args.at(3));
     tmp.clear();
     return err;
 }

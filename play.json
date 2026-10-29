@@ -1,11 +1,19 @@
 {
-    "active":"main",
-    "lang": "c",
-    "main":
-    {
-        "entry": "main.cpp",
-        "depends": ["runFromConfig.cpp"],
-        "flags": ["g", "Wall", "Wextra", "Wpedantic", "Wconversion", "Wshadow", "lstdc++"],
-        "bin": "main"
+    "_active": "rFFd",
+    "_compileToCwd": false,
+    "_lang": "c++",
+    "rFF": {
+        "entry": "runFromFile.cpp",
+        "depends": ["common.cpp"],
+        "flags": ["O3", "Wall", "Wextra"],
+        "bin": "rFF.out",
+        "args": []
+    },
+    "rFFd": {
+        "entry": "runFromFile.cpp",
+        "depends": ["common.cpp"],
+        "flags": ["g","O0", "Wall", "Wextra"],
+        "bin": "rFFd.out",
+        "args": ["tests/test.cpp"]
     }
 }
