@@ -1,0 +1,5 @@
+Play Command Tool
+play            -> run the compilation
+play -set:name  -> set the active name to `name`
+play -drop:name -> delete config by the name `name`
+play -list      -> list all configs

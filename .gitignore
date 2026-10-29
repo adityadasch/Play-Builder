@@ -1,4 +1,12 @@
+lib/
+archive/
+bin/
+src/
+tests/
+vscode/
 *.bat
 *.sh
 *.exe
-lib/
+*.o
+.gdbinit
+help.h

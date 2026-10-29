@@ -1,10 +1,11 @@
 {
     "active":"main",
+    "lang": "c",
     "main":
     {
-        "entry": "main.c",
-        "depends": [],
-        "flags": [],
-        "bin": "output_file_name"
+        "entry": "main.cpp",
+        "depends": ["runFromConfig.cpp"],
+        "flags": ["g", "Wall", "Wextra", "Wpedantic", "Wconversion", "Wshadow", "lstdc++"],
+        "bin": "main"
     }
 }
