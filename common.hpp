@@ -8,6 +8,8 @@
 #include <fstream>
 #include <iostream>
 
+#define PUT std::cout
+
 int runProcess(const char* filename, const std::vector<char *> args);
 
 struct Config{

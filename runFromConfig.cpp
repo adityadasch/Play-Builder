@@ -4,7 +4,7 @@
 using json= nlohmann::ordered_json;
 
 // TODO:
-// Make sure file is ran only if compilation finishes properly
+// Make sure file is ran only if compilation finishes properly. Done
 
 void create_config(){
     std::ofstream o("play.json");
@@ -18,6 +18,12 @@ void create_config(){
 
 int edit_active(std::string& toName){
     std::ifstream i("play.json");
+    if (!i.is_open()){
+        PUT << "Error while opening: play.json" << std::endl;
+        if (i.fail()) PUT << "Badbit was set" << std::endl;
+        if (i.fail()) PUT << "Error details: " << strerror(errno) << std::endl;
+        return 1;
+    }
     json data = json::parse(i);
     data["_active"] = toName;
 
@@ -45,6 +51,10 @@ int edit_active(std::string& toName){
     i.close();
 
     std::ofstream o("play.json");
+    if (o.fail()){
+        PUT << "File creation for write operation failed" << std::endl;
+        return 1;
+    }
     o << std::setw(4) << data << std::endl;
     o.close();
     return 0;
@@ -52,6 +62,12 @@ int edit_active(std::string& toName){
 
 int erase_name(std::string& toName){
     std::ifstream i("play.json");
+    if (!i.is_open()){
+        PUT << "Error while opening: play.json" << std::endl;
+        if (i.fail()) PUT << "Badbit was set" << std::endl;
+        if (i.fail()) PUT << "Error details: " << strerror(errno) << std::endl;
+        return 1;
+    }
     json data = json::parse(i);
     if (data.value("_active", "") == toName) data["_active"] = "";
     if (data.contains(toName)) data.erase(toName);
@@ -59,6 +75,10 @@ int erase_name(std::string& toName){
 
 
     std::ofstream o("play.json");
+    if (o.fail()){
+        PUT << "File creation for write operation failed" << std::endl;
+        return 1;
+    }
     o << std::setw(4) << data << std::endl;
     o.close();
     return 0;
@@ -66,11 +86,17 @@ int erase_name(std::string& toName){
 
 int list(){
     std::ifstream i("play.json");
+    if (!i.is_open()){
+        PUT << "Error while opening: play.json" << std::endl;
+        if (i.fail()) PUT << "Badbit was set" << std::endl;
+        if (i.fail()) PUT << "Error details: " << strerror(errno) << std::endl;
+        return 1;
+    }
     json data = json::parse(i);
 
     for (auto& sp: data.items()){
         std::string key = sp.key();
-        if (key != "_active" && key != "_lang" && key != "_compileToCwd") std::cout << "  " << sp.key() << std::endl;
+        if (key != "_active" && key != "_lang" && key != "_compileToCwd") PUT << "  " << sp.key() << std::endl;
     }
     
     i.close();
@@ -109,19 +135,19 @@ int extractConfig(Config* config_){
     bool binned = !config.value("_compileToCwd", true);
 
     if(!config.contains("_active")){
-        std::cout << "  Active field is a must" << std::endl;
+        PUT << "  Active field is a must" << std::endl;
         return 1;
     }
     std::string main = config.at("_active").get<std::string>();  
 
     if(!config.contains(main)) {
-        std::cout << "  The specified suite is absent" << std::endl;
+        PUT << "  The specified suite is absent" << std::endl;
         return 1;
     }
     std::map<std::string, json> suite = config.at(main).get<std::string, json>();
 
     if(suite.find("entry") == suite.end()) {
-        std::cout << "  The specified suite doesn't have entry" << std::endl;
+        PUT << "  The specified suite doesn't have entry" << std::endl;
         return 1;
     }
     std::string entry = suite.at("entry").get<std::string>();
@@ -158,7 +184,7 @@ int extractConfig(Config* config_){
     return 0;
 }
 
-int convertConfig(Config* config, std::vector<char*>& args, std::vector<char *>& runtime_args, std::vector<std::string>& storage){
+void convertConfig(Config* config, std::vector<char*>& args, std::vector<char *>& runtime_args, std::vector<std::string>& storage){
     storage.reserve(4+config->flags.size()+config->dependencies.size()); // g** entry -o bin -flags -depends nullptr 
     storage.push_back(config->compiler);
     storage.push_back(config->entry);
@@ -183,10 +209,9 @@ int convertConfig(Config* config, std::vector<char*>& args, std::vector<char *>&
     for(std::string& val: config->args)
         runtime_args.push_back(val.data());
     runtime_args.push_back(nullptr);
-    return 0;
 }
 
-int runFromConfig(std::string& bin){
+int runFromConfig(std::string& bin, bool& compFail){
     Config config;
     int err = extractConfig(&config);  
 
@@ -199,11 +224,10 @@ int runFromConfig(std::string& bin){
     err = runProcess(config.compiler.data(), args);
 
     if (err){
-        std::cout << "Something went wrong during compilation" << std::endl;
-        return 1;
+        PUT << "Something went wrong during compilation" << std::endl;
+        compFail = true;
+        return 5;
     }
-
-    // std::cout << "Bin at " << args.at(3) << std::endl;
 
     err = runProcess(args.at(3), runtime_args);
     bin = std::string(args.at(3));
