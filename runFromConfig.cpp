@@ -34,7 +34,6 @@ int edit_active(std::string& toName){
         std::cout << "The config \'" << toName << "\' doesn't exist." << std::endl;
         std::cout << "Do you want to create a new config? y or n " << std::flush;
         std::cin >> t;
-        //std::cin.ignore(std::numeric_limits<std::streamsize>::max());
         if (t.length() > 1 || (t!="y" && t!="Y")){
             std::cout << "Stopping process" << std::endl;
             return 0;

@@ -3,7 +3,7 @@
 #include "common.hpp"
 #include "help.h"
 
-int runFromConfig(std::string& bin, , bool& compFail);
+int runFromConfig(std::string& bin, bool& compFail);
 int runFromSource(std::string entry_file, std::string& bin, bool& compFail);
 int create_config(void);
 int edit_active(std::string& toName);

@@ -1,6 +1,8 @@
 Play Command Tool
 
-A lightweight C++ compilation and configuration manager.
+A lightweight C/C++ build tool that reads project configuration from a JSON file, invokes the compiler, and optionally runs the resulting executable.
+
+The tool is designed to simplify compiling projects with multiple source files and reusable compiler configurations.
 
 Usage
 
@@ -9,7 +11,7 @@ play [command]
 -- Usage 
 
 - `play` — Compile and run the active configuration.
-- `play <filename>` — Compile and run the specified source file.
+- `play <source-file>` — Compile and run the specified source file.
 - `play -set:<name>` — Set the active configuration to `<name>`. If the configuration does not exist, Play creates a new configuration using a default template.
 - `play -drop:<name>` — Delete the configuration named `<name>`. If the configuration does not exist, nothing is changed.
 - `play -list` — List all available configurations.
@@ -30,15 +32,53 @@ For example:
 // dep:common.cpp;utils.cpp
 
 Play automatically detects these dependencies and includes the specified files in the compilation process.
+Verification of existence of files is not done by play. In case of absence of file, the compilation will cease.
+
+Direct mode [or Source mode] does not support any features of the config mode other that the dependencies.
+Executable is created in the folder of entry with the same name as entry file.
 
 -- Configuration Management
 
+Uses config(s) from config file [play.json] to build the executable.
+Example config file:
+
+{
+    "_active": "main",
+    "_compileToCwd": false,
+    "_lang": "c++",
+    "main": {
+        "entry": "main.cpp",
+        "depends": [
+            "foo.cpp"
+        ],
+        "flags": [
+            "g",
+            "Wall",
+            "Wextra"
+        ],
+        "bin": "main",
+        args: ["arg1", "arg2"]
+    }
+}
+
+_active - The current active configuration used during compilation
+_lang: "c"|"c++" - Used to decide whether to use gcc or g++. 
+      Compiler is decided based on the extension of entry if lang is not specified
+_compileToCwd: bool - Compilation destination is set to cwd if true and './bin' if false 
+
+Note: _active, _lang, _compileToCwd are used by the tool.
+      Creation of config by these names is strongly discouraged. 
+
+entry: The main file/ file with main function
+depends: All the files to be linked
+flags: Any and all flags [without `-`]
+bin: Name of the executable after compilation
+args: The runtime args passed into the executable just like `compiled.out arg1, arg2`
 Set or create a configuration:
 
 play -set:debug
 
-
-If `debug` does not exist, Play creates it from the default configuration template and makes it the active configuration.
+If `debug` does not exist, Play prompts you to create it from the default configuration template and makes it the active configuration.
 
 Delete a configuration:
 
@@ -53,6 +93,7 @@ play -list
 ### Examples
 
 play
+play new
 play main.cpp
 play -set:debug
 play -drop:debug

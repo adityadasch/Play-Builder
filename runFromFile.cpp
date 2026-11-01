@@ -5,7 +5,7 @@ void parse_file(std::string entry_file, std::vector<std::string>& deps){
     std::string line;
     std::getline(i, line);
 
-    if (line.find_first_not_of("dep:") == std::string::npos) return 0;
+    if (line.find_first_not_of("dep:") == std::string::npos) return;
 
     line.replace(0, line.find_first_of(":")+1, "");
 
